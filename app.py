@@ -46,34 +46,51 @@ elif menu == "2. เซ็นไฟล์ (Sign File)":
     st.header("✍️ ลงลายมือชื่อดิจิทัล (Sign File)")
     
     priv_file = st.file_uploader("1. อัปโหลด Private Key (.pem)", type=['pem'])
-    target_file = st.file_uploader("2. อัปโหลดไฟล์ที่ต้องการเซ็น", type=['pdf', 'docx', 'png', 'jpg', 'txt'])
     
-    if priv_file and target_file:
-        if st.button("Sign Document"):
+    # 1. เพิ่ม accept_multiple_files=True
+    target_files = st.file_uploader(
+        "2. อัปโหลดไฟล์ที่ต้องการเซ็น (เลือกได้หลายไฟล์)", 
+        type=['pdf', 'docx', 'png', 'jpg', 'txt'],
+        accept_multiple_files=True
+    )
+    
+    if priv_file and target_files:
+        if st.button("Sign All Documents"):
             priv_key_data = priv_file.read()
-            file_data = target_file.read()
             
-            # เซ็นไฟล์
-            signature = DigitalSignatureCore.sign_file(priv_key_data, file_data)
-            
-            st.success("✅ เซ็นไฟล์สำเร็จ!")
-            st.text_area("Digital Signature (Base64)", signature, height=150)
-            
-            # สร้าง QR Code จาก Signature
-            qr = qrcode.QRCode(version=1, box_size=10, border=5)
-            qr.add_data(signature)
-            qr.make(fit=True)
-            img = qr.make_image(fill_color="black", back_color="white")
-            
-            buf = BytesIO()
-            img.save(buf, format="PNG")
-            byte_im = buf.getvalue()
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.image(byte_im, caption="QR Code สำหรับ Signature")
-            with col2:
-                st.download_button("ดาวน์โหลด QR Code", byte_im, file_name="signature_qr.png", mime="image/png")
+            # 2. วนลูปประมวลผลไฟล์ที่อัปโหลดมาทั้งหมด
+            for uploaded_file in target_files:
+                file_data = uploaded_file.read()
+                
+                # เซ็นไฟล์
+                signature = DigitalSignatureCore.sign_file(priv_key_data, file_data)
+                
+                # แสดงผลแยกตามไฟล์ด้วย st.expander เพื่อความสะอาดตา
+                with st.expander(f"📄 ผลลัพธ์สำหรับไฟล์: {uploaded_file.name}"):
+                    st.success(f"✅ เซ็นไฟล์ {uploaded_file.name} สำเร็จ!")
+                    st.text_area(f"Digital Signature (Base64) - {uploaded_file.name}", signature, height=100)
+                    
+                    # สร้าง QR Code
+                    qr = qrcode.QRCode(version=1, box_size=10, border=5)
+                    qr.add_data(signature)
+                    qr.make(fit=True)
+                    img = qr.make_image(fill_color="black", back_color="white")
+                    
+                    buf = BytesIO()
+                    img.save(buf, format="PNG")
+                    byte_im = buf.getvalue()
+                    
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.image(byte_im, width=200, caption=f"QR Code: {uploaded_file.name}")
+                    with col2:
+                        st.download_button(
+                            label=f"ดาวน์โหลด QR Code ({uploaded_file.name})",
+                            data=byte_im,
+                            file_name=f"sig_{uploaded_file.name}.png",
+                            mime="image/png",
+                            key=f"btn_{uploaded_file.name}" # ต้องระบุ key ให้ต่างกันในแต่ละไฟล์
+                        )
 
 elif menu == "3. ตรวจสอบไฟล์ (Verify)":
     st.header("🛡️ ตรวจสอบไฟล์ (Batch Verification & Visual Report)")
