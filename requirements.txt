@@ -1,0 +1,6 @@
+streamlit
+pycryptodome
+qrcode[pil]
+Pillow
+pyzbar
+pytest
