@@ -18,18 +18,29 @@ if menu == "1. สร้างกุญแจ (Key Gen)":
     st.header("🔑 สร้างคู่กุญแจ (RSA Key Pair)")
     st.info("Private Key เก็บไว้เซ็นไฟล์ (ห้ามให้ใครรู้) | Public Key แจกให้คนอื่นเพื่อใช้ตรวจสอบ")
     
+    # 1. เช็คว่ามีตัวแปรเก็บ Key ใน session_state หรือยัง ถ้ายังให้สร้างเตรียมไว้
+    if 'priv_key' not in st.session_state:
+        st.session_state['priv_key'] = None
+    if 'pub_key' not in st.session_state:
+        st.session_state['pub_key'] = None
+
+    # 2. เมื่อกดปุ่ม ให้สร้าง Key แล้วเก็บลง session_state
     if st.button("Generate Keys"):
         priv, pub = DigitalSignatureCore.generate_keys()
+        st.session_state['priv_key'] = priv
+        st.session_state['pub_key'] = pub
         
+    # 3. นำ Key จาก session_state มาแสดงผล (จะไม่หายไปไหนเวลากดโหลด)
+    if st.session_state['priv_key'] is not None and st.session_state['pub_key'] is not None:
         col1, col2 = st.columns(2)
         with col1:
             st.subheader("Private Key")
-            st.code(priv.decode('utf-8'))
-            st.download_button("ดาวน์โหลด Private Key", priv, file_name="private_key.pem")
+            st.code(st.session_state['priv_key'].decode('utf-8'))
+            st.download_button("ดาวน์โหลด Private Key", st.session_state['priv_key'], file_name="private_key.pem")
         with col2:
             st.subheader("Public Key")
-            st.code(pub.decode('utf-8'))
-            st.download_button("ดาวน์โหลด Public Key", pub, file_name="public_key.pem")
+            st.code(st.session_state['pub_key'].decode('utf-8'))
+            st.download_button("ดาวน์โหลด Public Key", st.session_state['pub_key'], file_name="public_key.pem")
 
 elif menu == "2. เซ็นไฟล์ (Sign File)":
     st.header("✍️ ลงลายมือชื่อดิจิทัล (Sign File)")
